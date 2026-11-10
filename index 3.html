@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime Time Ultimate</title>
+
+    <!-- Tailwind CSS Engine & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top left, #0f172a, #020617);
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-input {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col items-center justify-start p-3 sm:p-6 pb-20">
+
+    <!-- Supabase Initialization Script -->
+    <script>
+        const SUPABASE_URL = "https://grngelpiqnvndjgusyfs.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_YBQYU-3mbbxirpr2vaeowQ_ZnTI0ahp";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-2xl space-y-4">
+
+        <!-- App Header Bar -->
+        <header class="glass-panel p-4 rounded-2xl flex items-center justify-between shadow-xl">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/30">
+                    ⚡
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+                        Prime Time Ultimate
+                    </h1>
+                    <span id="conn-status" class="text-[11px] text-amber-400 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Initializing...
+                    </span>
+                </div>
+            </div>
+            <div id="user-pill" class="hidden text-xs bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 px-3 py-1.5 rounded-full font-medium">
+                @<span id="active-username"></span>
+            </div>
+        </header>
+
+        <!-- Auth Section -->
+        <div id="auth-box" class="glass-panel p-6 rounded-2xl shadow-xl space-y-4">
+            <h2 class="text-base font-semibold text-slate-200 border-b border-slate-800 pb-2">Account Access</h2>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Username</label>
+                    <input type="text" id="username" placeholder="Enter username" class="w-full glass-input rounded-xl px-4 py-2.5 text-sm outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Password</label>
+                    <input type="password" id="password" placeholder="Enter password" class="w-full glass-input rounded-xl px-4 py-2.5 text-sm outline-none transition">
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="appLogin()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl text-sm transition">Login</button>
+                <button onclick="appRegister()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2.5 rounded-xl text-sm border border-slate-700 transition">Register</button>
+            </div>
+        </div>
+
+        <!-- Post Creator Section -->
+        <div id="create-post-box" class="glass-panel p-5 rounded-2xl shadow-xl space-y-3 hidden">
+            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Create New Post</h2>
+            <textarea id="post-caption" rows="2" placeholder="What's happening?" class="w-full glass-input rounded-xl p-3 text-sm outline-none resize-none transition"></textarea>
+            <div class="flex items-center justify-between gap-3">
+                <input type="file" id="post-image" accept="image/*" class="text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-indigo-500/10 file:text-indigo-400">
+                <button onclick="appCreatePost()" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium px-5 py-2 rounded-xl text-xs shadow-md transition">Post</button>
+            </div>
+        </div>
+
+        <!-- Feed Section -->
+        <div class="space-y-3">
+            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">Feed Stream</h2>
+            <div id="feed-container" class="space-y-3">
+                <div class="glass-panel p-4 rounded-xl text-center text-xs text-slate-500">Loading posts...</div>
+            </div>
+        </div>
+
+        <!-- Messaging / Chat Section -->
+        <div id="chat-section" class="glass-panel p-5 rounded-2xl shadow-xl space-y-3 hidden mt-6">
+            <h2 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Direct Messages</h2>
+            <div id="messages-container" class="space-y-2 max-h-48 overflow-y-auto p-2 bg-slate-950/40 rounded-xl border border-slate-800/80 text-xs">
+                <p class="text-slate-500 text-center">No messages yet.</p>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="chat-receiver" placeholder="To (username)" class="w-1/3 glass-input rounded-xl px-3 py-2 text-xs outline-none">
+                <input type="text" id="chat-text" placeholder="Type a message..." class="flex-1 glass-input rounded-xl px-3 py-2 text-xs outline-none">
+                <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-medium">Send</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- App Logic Script -->
+    <script>
+        let currentUser = null;
+
+        async function checkConnection() {
+            const statusEl = document.getElementById('conn-status');
+            try {
+                const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                statusEl.className = "text-[11px] text-emerald-400 flex items-center gap-1";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Connected to Supabase`;
+                loadFeed();
+                loadMessages();
+            } catch (err) {
+                statusEl.className = "text-[11px] text-rose-400 flex items-center gap-1";
+                statusEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span> Connection Error`;
+            }
+        }
+
+        async function appRegister() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+            if (!u || !p) return alert('Username and Password required!');
+            const { error } = await supabase.from('users').insert([{ username: u, pass_hash: p, salt: 'salt_val' }]);
+            if (error) alert('Registration Failed: ' + error.message);
+            else alert('Registered successfully! Now login.');
+        }
+
+        async function appLogin() {
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+            if (!u || !p) return alert('Username and Password required!');
+            const { data, error } = await supabase.from('users').select('*').eq('username', u).eq('pass_hash', p).single();
+            if (error || !data) {
+                alert('Invalid Credentials!');
+            } else {
+                currentUser = data.username;
+                document.getElementById('active-username').innerText = currentUser;
+                document.getElementById('user-pill').classList.remove('hidden');
+                document.getElementById('auth-box').classList.add('hidden');
+                document.getElementById('create-post-box').classList.remove('hidden');
+                document.getElementById('chat-section').classList.remove('hidden');
+                alert('Logged in as @' + currentUser);
+                loadFeed();
+            }
+        }
+
+        async function appCreatePost() {
+            if (!currentUser) return alert('Please login first!');
+            const caption = document.getElementById('post-caption').value.trim();
+            const fileInput = document.getElementById('post-image');
+            let imagePath = 'default_img';
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const { error: imgErr } = await supabase.storage.from('posts').upload(fileName, file);
+                if (imgErr) return alert('Image Upload Failed: ' + imgErr.message);
+                const { data: urlData } = supabase.storage.from('posts').getPublicUrl(fileName);
+                imagePath = urlData.publicUrl;
+            }
+
+            const { error } = await supabase.from('posts').insert([{ username: currentUser, caption: caption, image_id: imagePath }]);
+            if (error) alert('Post Failed: ' + error.message);
+            else {
+                document.getElementById('post-caption').value = '';
+                fileInput.value = '';
+                loadFeed();
+            }
+        }
+
+        // Like Toggle Function
+        async function toggleLike(postId) {
+            if (!currentUser) return alert('Login to like posts!');
+            // Check if already liked
+            const { data: existing } = await supabase.from('likes').select('*').eq('post_id', postId).eq('username', currentUser);
+            
+            if (existing && existing.length > 0) {
+                // Unlike
+                await supabase.from('likes').delete().eq('post_id', postId).eq('username', currentUser);
+            } else {
+                // Like
+                await supabase.from('likes').insert([{ post_id: postId, username: currentUser }]);
+            }
+            loadFeed();
+        }
+
+        // Add Comment Function
+        async function addComment(postId) {
+            if (!currentUser) return alert('Login to comment!');
+            const commentInput = document.getElementById(`comment-input-${postId}`);
+            const text = commentInput.value.trim();
+            if (!text) return;
+
+            const { error } = await supabase.from('comments').insert([{ post_id: postId, username: currentUser, text: text }]);
+            if (error) alert('Comment failed: ' + error.message);
+            else {
+                commentInput.value = '';
+                loadFeed();
+            }
+        }
+
+        // Send Message Function
+        async function sendMessage() {
+            if (!currentUser) return alert('Login to chat!');
+            const receiver = document.getElementById('chat-receiver').value.trim();
+            const text = document.getElementById('chat-text').value.trim();
+            if (!receiver || !text) return alert('Receiver and text required!');
+
+            const { error } = await supabase.from('messages').insert([{ sender: currentUser, receiver: receiver, text: text }]);
+            if (error) alert('Message failed: ' + error.message);
+            else {
+                document.getElementById('chat-text').value = '';
+                loadMessages();
+            }
+        }
+
+        async function loadMessages() {
+            const container = document.getElementById('messages-container');
+            const { data, error } = await supabase.from('messages').select('*').order('created_at', { ascending: true }).limit(20);
+            if (error || !data || data.length === 0) return;
+
+            container.innerHTML = data.map(m => `
+                <div class="p-1.5 border-b border-slate-800/50">
+                    <span class="font-semibold text-indigo-400">@${m.sender}</span> ➔ <span class="font-semibold text-slate-300">@${m.receiver}</span>: 
+                    <span class="text-slate-200">${m.text}</span>
+                </div>
+            `).join('');
+        }
+
+        // Load Feed with Likes and Comments
+        async function loadFeed() {
+            const container = document.getElementById('feed-container');
+            const { data: posts, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+            const { data: likes } = await supabase.from('likes').select('*');
+            const { data: comments } = await supabase.from('comments').select('*');
+
+            if (error || !posts || posts.length === 0) {
+                container.innerHTML = `<div class="glass-panel p-4 rounded-xl text-center text-xs text-slate-500">No posts in feed yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = posts.map(post => {
+                const postLikes = likes ? likes.filter(l => l.post_id === post.id) : [];
+                const postComments = comments ? comments.filter(c => c.post_id === post.id) : [];
+                const isLiked = currentUser ? postLikes.some(l => l.username === currentUser) : false;
+
+                return `
+                    <div class="glass-panel p-4 rounded-xl space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-indigo-400">@${post.username}</span>
+                            <span class="text-[10px] text-slate-500">${new Date(post.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        ${post.caption ? `<p class="text-xs text-slate-200 leading-relaxed">${post.caption}</p>` : ''}
+                        ${post.image_id && post.image_id !== 'default_img' ? `<img src="${post.image_id}" class="w-full h-48 object-cover rounded-lg border border-slate-800">` : ''}
+                        
+                        <!-- Actions (Like & Comments Count) -->
+                        <div class="flex items-center gap-4 pt-1 border-t border-slate-800/60 text-xs">
+                            <button onclick="toggleLike('${post.id}')" class="flex items-center gap-1.5 ${isLiked ? 'text-rose-400 font-bold' : 'text-slate-400 hover:text-slate-200'}">
+                                ❤️ <span>${postLikes.length}</span> Likes
+                            </button>
+                            <span class="text-slate-500">💬 <span>${postComments.length}</span> Comments</span>
+                        </div>
+
+                        <!-- Comments Section -->
+                        <div class="space-y-2 pt-2 border-t border-slate-800/40">
+                            <div class="space-y-1 max-h-28 overflow-y-auto text-xs">
+                                ${postComments.map(c => `
+                                    <div class="bg-slate-950/30 px-2.5 py-1.5 rounded-lg border border-slate-800/40">
+                                        <span class="font-semibold text-indigo-300">@${c.username}:</span> 
+                                        <span class="text-slate-300">${c.text}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="comment-input-${post.id}" placeholder="Write a comment..." class="flex-1 glass-input rounded-lg px-3 py-1.5 text-xs outline-none">
+                                <button onclick="addComment('${post.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium">Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.onload = checkConnection;
+    </script>
+</body>
+</html>
